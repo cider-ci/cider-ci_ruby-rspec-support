@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+###############################################################################
+#
+# Cider-CI Taks management for Rspec tests. 
+#
+# Authors: Thomas Schank <DrTom@schank.ch>
+#
+###############################################################################
+
+# require 'cider_ci/rspec_support'
+require 'optparse'
+require 'ostruct'
+
+###############################################################################
+# Globals (this is a script after all)
+###############################################################################
+
+Thread.abort_on_exception = true
+@debug = false
+@pool = nil
+
+###############################################################################
+# Run
+###############################################################################
+
+###############################################################################
+# Options, main ....
+###############################################################################
+
+def parse_options(options)
+  OptionParser.new do |opts|
+    opts.banner = 'Usage: cider-ci_rspec-support [options] COMMAND [files or directories]'
+
+    opts.on('-f', '--rspec-feature-tasks-path FILEPATH', String,
+            "default: #{options.rspec_feature_tasks_path}") do |f|
+      options.respec_feature_tasks = f
+    end
+
+    opts.on('-t', '--rspec-tasks-path FILEPATH', String, 
+            "default: #{options.rspec_tasks_path}" ) do |t|
+      options.rspec_tasks = t
+    end
+
+  end.parse!
+  options
+end
+
+def main
+  options = OpenStruct.new
+  options.rspec_tasks_path = './cider-ci/tasks/rspec-tasks.yml'
+  options.rspec_feature_tasks_path = './cider-ci/tasks/rspec-feature-tasks.yml'
+
+  parse_options options
+
+end
+
+main
