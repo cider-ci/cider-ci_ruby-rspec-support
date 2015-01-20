@@ -1,6 +1,9 @@
-require 'cider_ci/support/version'
+require 'cider_ci/rspec_support/version'
 
-module Cider_CI
+module CiderCI
   module RspecSupport
+    class << self
+      attr_accessor :collector
+    end
   end
 end

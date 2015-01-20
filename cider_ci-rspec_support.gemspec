@@ -1,11 +1,13 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'cider_ci/support/version'
+require 'cider_ci/rspec_support'
+require 'cider_ci/rspec_support/version'
+require 'cider_ci/rspec_support/collector'
 
 Gem::Specification.new do |spec|
-  spec.name          = 'cider_ci-support'
-  spec.version       = Cider_CI::Support::VERSION
+  spec.name          = 'cider_ci-rspec_support'
+  spec.version       = ::CiderCI::RspecSupport::VERSION
   spec.authors       = ['Thomas Schank']
   spec.email         = ['DrTom@schank.ch']
   spec.summary       = 'Cider-CI support for Rspec'
@@ -21,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'bundler', '~> 1.6'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'pry'
+  spec.add_runtime_dependency 'rspec', '~> 3.1'
 
-  spec.add_runtime_dependency 'rspec-core', '=> 3.0.0', '< 4.0.0'
+  spec.add_runtime_dependency 'rspec-core', '>= 3.0.0', '< 4.0.0'
 end

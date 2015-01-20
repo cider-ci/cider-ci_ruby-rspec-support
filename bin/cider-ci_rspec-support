@@ -7,51 +7,155 @@
 #
 ###############################################################################
 
-# require 'cider_ci/rspec_support'
+###############################################################################
+# Read and write
+###############################################################################
+ 
+require 'cider_ci/rspec_support'
+require 'cider_ci/rspec_support/util'
+require 'cider_ci/rspec_support/deep_merge'
+
+require 'YAML'
+
+def read_tasks(path)
+  Hash[CiderCI::RspecSupport::Util.deep_symbolize_keys(YAML.load_file(path))]
+rescue 
+  {}
+end
+
+def write_tasks(path, tasks)
+  abs_path = File.absolute_path(path)
+  FileUtils.mkdir_p File.dirname(abs_path)
+  File.open abs_path, 'w' do |f|
+    f.write Hash[
+      CiderCI::RspecSupport::Util.deep_stringify_keys(tasks).sort].to_yaml
+  end
+end
+
+def compute_output(tasks, file_path, template)
+  CiderCI::RspecSupport::DeepMerge.deep_merge(
+    Hash[tasks.map do |task|
+      [task.key, task.spec_properties(template)]
+    end],
+    read_tasks(file_path).select do|k| 
+      tasks.map(&:key).map(&:to_sym).include? k
+    end)
+end
+
+###############################################################################
+# check, main, update
+###############################################################################
+ 
+ 
+def update(options, collected)
+  write_tasks(options.rspec_tasks_path,
+              compute_output(collected.tasks,  
+                             options.rspec_tasks_path, 
+                             options.task_body_template))
+
+  write_tasks(options.rspec_feature_tasks_path,
+              compute_output(collected.feature_tasks,  
+                             options.rspec_feature_tasks_path, 
+                             options.feature_task_body_template))
+end
+
+def keys_equal?(tasks, file)
+  Set.new(tasks.map(&:key).map(&:to_s)) == 
+    Set.new(read_tasks(file).keys.map(&:to_s))
+end
+
+def check(options, collected)
+  unless keys_equal? collected.tasks, options.rspec_tasks_path
+    abort "Rspec tasks are out of date." 
+  end
+
+  unless keys_equal? collected.feature_tasks, options.rspec_feature_tasks_path
+    abort "Rspec feature tasks are out of date." 
+  end
+
+  puts "Rspec feature tasks and regular tasks are up to date."
+  exit 0
+end
+
+def main
+  options = default_options
+  parse_options options
+  command = ARGV.shift
+  collected = collect_rspec_tasks
+
+  case command
+  when 'update'
+    update options, collected
+  when 'check'
+    check options, collected
+  else
+    abort "Don't know command '#{command}'"
+  end
+end
+
+###############################################################################
+# Rspec
+###############################################################################
+
+require 'cider_ci/rspec_support/collector'
+
+def collect_rspec_tasks
+  rspec_args = ["--format", CiderCI::RspecSupport::Collector.to_s, 
+                "--dry-run"].concat(ARGV)
+  RSpec::Core::Runner.run(rspec_args, $stderr, $stdout)
+
+  CiderCI::RspecSupport.collector
+end
+
+###############################################################################
+# Options
+###############################################################################
+ 
 require 'optparse'
 require 'ostruct'
 
-###############################################################################
-# Globals (this is a script after all)
-###############################################################################
-
-Thread.abort_on_exception = true
-@debug = false
-@pool = nil
-
-###############################################################################
-# Run
-###############################################################################
-
-###############################################################################
-# Options, main ....
-###############################################################################
-
 def parse_options(options)
   OptionParser.new do |opts|
-    opts.banner = 'Usage: cider-ci_rspec-support [options] COMMAND [files or directories]'
+    opts.banner = 'Usage: cider-ci_rspec-support ' \
+      '[options] COMMAND [files or directories]'
 
-    opts.on('-f', '--rspec-feature-tasks-path FILEPATH', String,
+    opts.on('-f', '--rspec-feature-tasks FILE', String,
             "default: #{options.rspec_feature_tasks_path}") do |f|
       options.respec_feature_tasks = f
     end
 
-    opts.on('-t', '--rspec-tasks-path FILEPATH', String, 
-            "default: #{options.rspec_tasks_path}" ) do |t|
+    opts.on('-t', '--rspec-tasks FILE', String, 
+            "default: #{options.rspec_tasks_path}") do |t|
       options.rspec_tasks = t
     end
 
+    opts.on(nil, '--task-body-template TEMPLATE', String, 
+            "default: #{options.task_body_template}") do |t|
+      options.task_body_template = t
+    end
+
+    opts.on(nil, '--feature-task-body-template TEMPLATE', String, 
+            "default: #{options.feature_task_body_template}") do |t|
+      options.feature_task_body_template = t
+    end
   end.parse!
   options
 end
 
-def main
+def default_options
   options = OpenStruct.new
-  options.rspec_tasks_path = './cider-ci/tasks/rspec-tasks.yml'
-  options.rspec_feature_tasks_path = './cider-ci/tasks/rspec-feature-tasks.yml'
+  options.rspec_tasks_path = './.cider-ci/tasks/rspec-tasks.yml'
+  options.rspec_feature_tasks_path = './.cider-ci/tasks/rspec-feature-tasks.yml'
 
-  parse_options options
+  options.feature_task_body_template = 
+    '%[DISPLAY=":$XVNC_PORT" bundle exec rspec "#{rspec_path}"]'
 
+  options.task_body_template = '%[bundle exec rspec "#{rspec_path}"]'
+
+  options
 end
 
+###############################################################################
+# here we go 
+###############################################################################
 main

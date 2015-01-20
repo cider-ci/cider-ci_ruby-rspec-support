@@ -81,3 +81,9 @@ Style/StringLiterals:
 # Cop supports --auto-correct.
 Style/TrailingWhitespace:
   Enabled: false
+
+# Offense count: 1
+Lint/Eval:
+  Enabled: false
+
+
