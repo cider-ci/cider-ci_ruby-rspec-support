@@ -15,7 +15,8 @@ require 'cider_ci/rspec_support'
 require 'cider_ci/rspec_support/util'
 require 'cider_ci/rspec_support/deep_merge'
 
-require 'YAML'
+require 'yaml'
+require 'fileutils'
 
 def read_tasks(path)
   Hash[CiderCI::RspecSupport::Util.deep_symbolize_keys(YAML.load_file(path))]
