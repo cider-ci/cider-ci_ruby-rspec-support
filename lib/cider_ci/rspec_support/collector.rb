@@ -17,26 +17,19 @@ module CiderCI
       end
 
       def example_started(notification)
-        metadata = notification.example.metadata
+        metadata = notification.example.example_group.metadata 
+        task = Task.new(
+          file_path: metadata[:file_path],
+          line_number: nil,
+          description: metadata[:file_path])
         case metadata[:type]
         when :feature
-          @feature_tasks << Task.new(
-             file_path: metadata[:file_path],
-             line_number: metadata[:line_number],
-             description: metadata[:full_description])
+          @feature_tasks << task
         else
-          if present? metadata[:file_path]
-            @tasks <<  Task.new(
-               file_path: metadata[:file_path],
-               line_number: nil,
-               description: metadata[:example_group][:description])
-          end
+          @tasks << task
         end
       end
 
-      def present?(str)
-        str && !str.gsub(/\s+/, '').empty?
-      end
     end
   end
 end
