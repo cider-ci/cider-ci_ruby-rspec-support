@@ -4,7 +4,6 @@ module CiderCI
   module RspecSupport
     class Task
       
-
       attr_reader :properties
 
       def initialize(properties)

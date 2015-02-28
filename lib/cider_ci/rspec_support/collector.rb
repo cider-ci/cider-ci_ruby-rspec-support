@@ -16,12 +16,19 @@ module CiderCI
         @feature_tasks = Set.new 
       end
 
+      def parent_metadata(metadata)
+        if (pmd = metadata[:parent_example_group])
+          parent_metadata(pmd)
+        else
+          metadata
+        end
+      end
+
       def example_started(notification)
-        metadata = notification.example.example_group.metadata 
-        task = Task.new(
-          file_path: metadata[:file_path],
-          line_number: nil,
-          description: metadata[:file_path])
+        metadata = parent_metadata(notification.example.example_group.metadata)
+        task = Task.new(file_path: metadata[:file_path],
+                        description: metadata[:file_path]
+                       )
         case metadata[:type]
         when :feature
           @feature_tasks << task
@@ -29,7 +36,6 @@ module CiderCI
           @tasks << task
         end
       end
-
     end
   end
 end
